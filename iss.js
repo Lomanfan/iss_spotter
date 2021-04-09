@@ -29,15 +29,8 @@ const fetchMyIP = function (callback) { // use request to fetch IP address from 
       return;
     }
 
-    const data = JSON.parse(body);   //covert string JSON into {}
-    // console.log(data.ip);
-    if (body) {
-      // console.log(body["ip"]);
-      return callback(null, data.ip);
-    } else {
-      return callback("IP not found.");
-    }
-    // console.log(body);
+    const data = JSON.parse(body).ip;   //covert string JSON into {}
+    callback(null, data);
   });
 };
 
@@ -58,9 +51,17 @@ const fetchCoordsByIP = function (ip, callback) {
     const data = JSON.parse(body);
     // console.log(body);
 
-    if (body) {
-      return callback(null, `latitude: ${data.latitude}, longitude: ${data.longitude}`);
-    }
+    const { latitude, longitude } = JSON.parse(body);
+    callback(null, { latitude, longitude });
+
+    // if (body) {
+    //   let coords = {};
+    //   coords.latitude = data.latitude;
+    //   coords.longitude = data.longitude;
+    //   // callback(null, `latitude: ${data.latitude}, longitude: ${data.longitude}`);
+    //   callback(null, coords);
+    // }
+
   });
 };
 
@@ -78,46 +79,43 @@ const fetchISSFlyOverTimes = function (coords, callback) {
       return;
     }
 
-    const data = JSON.parse(body);  // {}
-    console.log(data.response);
+    const passes = JSON.parse(body).response;  // {}
+    callback(null, passes);
 
-    if (body) {
-      return callback(null, `risetime: ${data.response.risetime}, duration: ${data.duration}`); ///??????
-    }
   });
 };
 
 
 const nextISSTimesForMyLocation = function (callback) {
-  fetchMyIp((error, ip) => {
+  fetchMyIP((error, ip) => {
     if (error) {
       return callback(error, null);
-    } else {
-      fetchCoordsByIP(ip, (error, location) => {
+    }
+
+    fetchCoordsByIP(ip, (error, croods) => {
+      if (error) {
+        return callback(error, null);
+      }
+
+      fetchISSFlyOverTimes(croods, (error, passTimes) => {
+
         if (error) {
           return callback(error, null);
-        } else {
-          fetchISSFlyOverTimes(coords, (error, passTimes) => {
-            if (error) {
-              return callback(error, null);
-              } else {
-              return callback(null, passTimes);
-            }
-
-          });
-
         }
+
+        callback(null, passTimes);
       });
-    }
+
+    });
+
   })
 };
 
 
-
-
-module.exports = { 
-  fetchMyIP, 
-  fetchCoordsByIP, 
+module.exports = {
+  fetchMyIP,
+  fetchCoordsByIP,
   fetchISSFlyOverTimes,
-  nextISSTimesForMyLocation 
+  nextISSTimesForMyLocation
 };
+
